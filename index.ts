@@ -10,6 +10,8 @@ import * as through from "through";
 const gutil = require("gulp-util");
 const PluginError = gutil.PluginError;
 const map = require("map-stream");
+import * as path from 'path';
+import * as columnify from 'columnify';
 
 export interface PluginOptions {
     configuration?: any;
@@ -205,19 +207,25 @@ tslintPlugin.report = function(options?: ReportOptions) {
             if (failureCount > 0) {
                 errorFiles.push(file);
                 Array.prototype.push.apply(allFailures, file.tslint.failures);
+                console.log(`\n${gutil.colors.red(file.tslint.failureCount)} ${gutil.colors.red('errors')} found in ${gutil.colors.cyan(file.history[0])}`);
+                const columns = [];
 
-                if (options.reportLimit <= 0 || (options.reportLimit && options.reportLimit > totalReported)) {
-                    if (file.tslint.output !== undefined) {
-                        console.log(file.tslint.output);
-                    }
-                    totalReported += failureCount;
-
-                    if (options.reportLimit > 0 &&
-                        options.reportLimit <= totalReported) {
-                        log("More than " + options.reportLimit
-                            + " failures reported. Turning off reporter.");
-                    }
+                for (let failure of file.tslint.failures) {
+                        var lineAndCharacter = failure.getStartPosition().getLineAndCharacter();
+                        var line = lineAndCharacter.line + 1;
+                        var character = lineAndCharacter.character + 1;
+                        const seperator = `\u1680    `;
+                        columns.push({
+                            line: `${gutil.colors.magenta(line)}  `,
+                            char: `:${gutil.colors.magenta(character)}`,
+                            description: `${failure.getFailure()}`,
+                            rule: gutil.colors.red(`${seperator}${failure.getRuleName()}`),
+                        })
                 }
+
+                console.log(columnify(columns, {
+                    showHeaders: false,
+                    }));
             }
         }
 
