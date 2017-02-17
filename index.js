@@ -140,24 +140,34 @@ tslintPlugin.report = function (options) {
             if (failureCount > 0) {
                 errorFiles.push(file);
                 Array.prototype.push.apply(allFailures, file.tslint.failures);
-                console.log("\n" + gutil.colors.red(file.tslint.failureCount) + " " + gutil.colors.red('errors') + " found in " + gutil.colors.cyan(file.history[0]));
-                var columns = [];
-                for (var _i = 0, _a = file.tslint.failures; _i < _a.length; _i++) {
-                    var failure = _a[_i];
-                    var lineAndCharacter = failure.getStartPosition().getLineAndCharacter();
-                    var line = lineAndCharacter.line + 1;
-                    var character = lineAndCharacter.character + 1;
-                    var seperator = "\u1680    ";
-                    columns.push({
-                        line: gutil.colors.magenta(line) + "  ",
-                        char: ":" + gutil.colors.magenta(character),
-                        description: "" + failure.getFailure(),
-                        rule: gutil.colors.red("" + seperator + failure.getRuleName())
-                    });
+                if (options.reportLimit <= 0 || (options.reportLimit && options.reportLimit > totalReported)) {
+                    console.log("\n" + gutil.colors.red(file.tslint.failureCount) + " " + gutil.colors.red('errors') + " found in " + gutil.colors.cyan(file.history[0]));
+                    var columns = [];
+                    for (var _i = 0, _a = file.tslint.failures; _i < _a.length; _i++) {
+                        var failure = _a[_i];
+                        if (options.reportLimit > 0 &&
+                            options.reportLimit <= totalReported) {
+                            log("More than " + options.reportLimit + " failures reported. Turning off reporter.");
+                            break;
+                        }
+                        else {
+                            var lineAndCharacter = failure.getStartPosition().getLineAndCharacter();
+                            var line = lineAndCharacter.line + 1;
+                            var character = lineAndCharacter.character + 1;
+                            var seperator = "\u1680    ";
+                            columns.push({
+                                line: gutil.colors.magenta(line) + "  ",
+                                char: ":" + gutil.colors.magenta(character),
+                                description: "" + failure.getFailure(),
+                                rule: gutil.colors.red("" + seperator + failure.getRuleName())
+                            });
+                            totalReported++;
+                        }
+                    }
+                    console.log(columnify(columns, {
+                        showHeaders: false
+                    }));
                 }
-                console.log(columnify(columns, {
-                    showHeaders: false
-                }));
             }
         }
         // Pass file
