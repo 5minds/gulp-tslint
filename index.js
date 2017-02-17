@@ -8,6 +8,7 @@ var through = require("through");
 var gutil = require("gulp-util");
 var PluginError = gutil.PluginError;
 var map = require("map-stream");
+var columnify = require("columnify");
 /**
  * Helper function to check if a value is a function
  * @param {any} value to check whether or not it is a function
@@ -139,17 +140,24 @@ tslintPlugin.report = function (options) {
             if (failureCount > 0) {
                 errorFiles.push(file);
                 Array.prototype.push.apply(allFailures, file.tslint.failures);
-                if (options.reportLimit <= 0 || (options.reportLimit && options.reportLimit > totalReported)) {
-                    if (file.tslint.output !== undefined) {
-                        console.log(file.tslint.output);
-                    }
-                    totalReported += failureCount;
-                    if (options.reportLimit > 0 &&
-                        options.reportLimit <= totalReported) {
-                        log("More than " + options.reportLimit
-                            + " failures reported. Turning off reporter.");
-                    }
+                console.log("\n" + gutil.colors.red(file.tslint.failureCount) + " " + gutil.colors.red('errors') + " found in " + gutil.colors.cyan(file.history[0]));
+                var columns = [];
+                for (var _i = 0, _a = file.tslint.failures; _i < _a.length; _i++) {
+                    var failure = _a[_i];
+                    var lineAndCharacter = failure.getStartPosition().getLineAndCharacter();
+                    var line = lineAndCharacter.line + 1;
+                    var character = lineAndCharacter.character + 1;
+                    var seperator = "\u1680    ";
+                    columns.push({
+                        line: gutil.colors.magenta(line) + "  ",
+                        char: ":" + gutil.colors.magenta(character),
+                        description: "" + failure.getFailure(),
+                        rule: gutil.colors.red("" + seperator + failure.getRuleName())
+                    });
                 }
+                console.log(columnify(columns, {
+                    showHeaders: false
+                }));
             }
         }
         // Pass file
@@ -196,8 +204,8 @@ tslintPlugin.report = function (options) {
     };
     return through(reportFailures, throwErrors);
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = tslintPlugin;
+exports.__esModule = true;
+exports["default"] = tslintPlugin;
 // ES5/ES6 fallbacks
 module.exports = tslintPlugin;
-module.exports.default = tslintPlugin;
+module.exports["default"] = tslintPlugin;
